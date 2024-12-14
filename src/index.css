@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* index.css */
+
+/* Global color for sidebar text */
+.sidebar-text {
+  color: gray; /* Or any shade of gray you'd like */
+}
+
+.sidebar-text-hover:hover {
+  color: white; /* Change text color on hover, if needed */
+}
+.background-color{
+    background-color: white;
+}
+.main-bg{
+    background: #F9F9FB;
+}
+.border{
+    color: gray;
+}
