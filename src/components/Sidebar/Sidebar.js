@@ -16,11 +16,11 @@ import { FaSyncAlt } from 'react-icons/fa';
 const Sidebar = ({ setActiveItem }) => {
   const mainLinks = [
     { name: 'Dashboard', icon: faTachometerAlt, path: '/' },
-    { name: 'Job', icon: faBriefcase, path: '/job' },
-    { name: 'Dump Runs', icon: faRecycle, path: '/dump-runs' },
-    { name: 'Trucks', icon: faTruck, path: '/trucks' },
-    { name: 'Daily Report by Routes', icon: faMap, path: '/routes-report' },
-    { name: 'Reconsilations', icon: faClipboardList, path: '/reconciliations' },
+    { name: 'Vehicles', icon: faBriefcase, path: '/job' },
+    // { name: 'Dump Runs', icon: faRecycle, path: '/dump-runs' },
+    // { name: 'Trucks', icon: faTruck, path: '/trucks' },
+    // { name: 'Daily Report by Routes', icon: faMap, path: '/routes-report' },
+    // { name: 'Reconsilations', icon: faClipboardList, path: '/reconciliations' },
   ];
 
   const footerLinks = [

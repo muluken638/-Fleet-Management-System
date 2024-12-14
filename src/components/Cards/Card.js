@@ -1,30 +1,81 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCar, faWrench, faTicketAlt } from '@fortawesome/free-solid-svg-icons';
 
-const Card = ({ title, icon, value, percentage, color }) => {
+// Card Component
+const Card = ({ title, icon, value, color }) => {
   return (
+    <div className={`border rounded-lg p-4 bg-${color}-100 flex flex-col items-center`}>
+      <h3 className="text-lg font-bold">{title}</h3>
+      <p className="text-2xl">{value}</p>
+      <FontAwesomeIcon icon={icon} className="text-2xl" />
+    </div>
+  );
+};
+
+// VehicleDashboard Component
+const VehicleDashboard = () => {
+  const [products, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/products'); // Adjust the path as necessary
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setVehicles(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return (
+    <div>
+      <p>Error: {error}</p>
+      <button onClick={() => window.location.reload()}>Retry</button>
+    </div>
+  );
+
+  // Count products by status
+  const totalAvailable = products.filter(product => product.status === 'active').length;
+  const totalInUse = products.filter(product => product.status === 'inactive').length;
+  const totalUnderMaintenance = products.filter(product => product.status === 'maintenance').length;
+
+  return (
+  <div className="flex-row">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
     
-    <div className="flex flex-col  bg-white p-4 rounded-lg  space-y-4 border bordercolor">
-      <div className="flex items-center space-x-2 justify-start">
-        <FontAwesomeIcon icon={icon} className="text-3xl text-blue-700" />
-        <h3 className="text-xl font-bold">{title}</h3>
-      </div>
-      <div className="flex justify-between w-full">
-        <div className="text-3xl font-semibold">{value}</div>
-        <div
-          className={`text-xl font-medium  ${
-            color === 'green'
-              ? 'text-green-500  bg-sttisticsbgcolorGreen border-2-staticsbordercolor p-1 rounded-lg'
-              : color === 'red'
-              ? 'text-red-  bg-sttisticsbgcolorRed p-1 rounded-lg'
-              : 'text-yellow-500  bg-sttisticsbgcolorGreen p-1 rounded-lg'
-          }`}
-        >
-          {percentage}%
-        </div>
+        <Card 
+          title="Active Vehicles" 
+          icon={faCar} 
+          value={totalAvailable} 
+          color="green" 
+        />
+        <Card 
+          title="In Use Vehicles" 
+          icon={faTicketAlt} 
+          value={totalInUse} 
+          color="yellow" 
+        />
+        <Card 
+          title="Under Maintenance Vehicles" 
+          icon={faWrench} 
+          value={totalUnderMaintenance} 
+          color="red" 
+        />
       </div>
     </div>
   );
 };
 
-export default Card;
+export default VehicleDashboard;

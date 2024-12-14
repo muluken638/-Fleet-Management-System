@@ -1,55 +1,51 @@
-import React, { useState } from 'react';
-import { FaFilter, FaSortDown } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaFilter } from 'react-icons/fa';
 
-// Generate 200 rows of data
-const generateTableData = () => {
-  const routes = ['North', 'South', 'East', 'West'];
-  const statuses = ['Completed', 'In Process', 'Scheduled'];
-  const data = [];
-
-  for (let i = 1; i <= 200; i++) {
-    data.push({
-      date: '10-05-2024',
-      client: `Client ${i}`,
-      address: `${i} Elm St, Springfield, 98765`,
-      jobId: `J0${i}`,
-      route: routes[i % routes.length],
-      status: statuses[i % statuses.length],
-      selected: false,
-    });
-  }
-
-  return data;
-};
-
+// DumpRuns component to display vehicle data in a table
 const DumpRuns = () => {
-  const [tableData, setTableData] = useState(generateTableData());
-  const [filters, setFilters] = useState({
-    date: '',
-    route: '',
-  });
+  const [tableData, setTableData] = useState([]);
+  const [filters, setFilters] = useState({ status: '', date: '' });
   const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
-  const rowsPerPage = 10; // Number of rows per page
-  const totalPages = Math.ceil(tableData.length / rowsPerPage);
-
-  // Determine the visible range of pages
-  const maxPageButtons = 5; // Number of page numbers to show
-  const startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-  const endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/Data/Data.json'); // Adjust this path if necessary
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        setTableData(data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Get filtered data
-  const filteredData = tableData.filter(
-    (row) =>
-      (!filters.date || row.date === filters.date) &&
-      (!filters.route || row.route === filters.route),
+  const filteredData = tableData.filter(row => 
+    (!filters.status || row.status === filters.status) &&
+    (!filters.date || row.lastUpdated.split('T')[0] === filters.date)
   );
 
   // Paginated data for the current page
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage,
+    currentPage * rowsPerPage
   );
+
+  // Handle Page Change
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= Math.ceil(filteredData.length / rowsPerPage)) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Reset Filters
+  const resetFilters = () => {
+    setFilters({ status: '', date: '' });
+    setCurrentPage(1);
+  };
 
   // Select All Rows
   const toggleSelectAll = (checked) => {
@@ -63,116 +59,82 @@ const DumpRuns = () => {
     );
   };
 
-  // Reset Filters and Selection
-  const resetFilters = () => {
-    setFilters({ date: '', route: '' });
-    setTableData((prevData) => prevData.map((row) => ({ ...row, selected: false })));
-    setCurrentPage(1); // Reset to the first page
-  };
-
-  // Handle Page Change
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  // Delete Selected Rows
+  const deleteSelectedRows = () => {
+    setTableData((prevData) => prevData.filter((row) => !row.selected));
   };
 
   return (
     <div className="p-4 bg-white rounded-lg mx-4">
       {/* Top Controls */}
-      <div className="flex items-center justify-between mb-4 ">
-        <div>
-          <input
-            type="checkbox"
-            id="select-all"
-            className="mr-2"
-            onChange={(e) => toggleSelectAll(e.target.checked)}
-          />
-          <label htmlFor="select-all" className="text-sm text-gray-600">
-            Select All
-          </label>
-        </div>
-        <div className="flex items-center space-x-2">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <label className="text-sm text-gray-600">Filter by Status:</label>
+          <select
+            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
+            value={filters.status}
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}>
+            <option value="">All Statuses</option>
+            <option value="Available">Available</option>
+            <option value="In Use">In Use</option>
+            <option value="Under Maintenance">Under Maintenance</option>
+          </select>
           <input
             type="date"
-            className="px-3 py-3 bg-gray-100 text-sm text-gray-700 rounded"
+            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
             value={filters.date}
             onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))} />
-          <select
-            className="px-3 py-3 bg-gray-100 text-sm text-gray-700 rounded"
-            value={filters.route}
-            onChange={(e) => setFilters((prev) => ({ ...prev, route: e.target.value }))}>
-            <option value="">All Routes</option>
-            <option value="North">North</option>
-            <option value="South">South</option>
-            <option value="East">East</option>
-            <option value="West">West</option>
-          </select>
           <button
-            className="px-3 py-3 bg-gray-100 text-sm text-gray-700 rounded flex  justify-center items-center gap-2"
+            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
             onClick={resetFilters}>
-            <FaFilter /> Filters <FaSortDown />
-          </button>
-          <button
-            className="px-3 py-3 bg-red-100 text-sm text-red-600 rounded"
-            onClick={resetFilters}>
-            Reset Filters
+            <FaFilter /> Reset Filters
           </button>
         </div>
+        <button
+          className="bg-red-500 text-white px-4 py-2 rounded"
+          onClick={deleteSelectedRows}>
+          Delete Selected
+        </button>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-full border-separate border-spacing-0">
           <thead className="bg-gray-100">
-            <tr className='rounded-lg'>
-              <th className="p-2 text-left text-sm font-medium text-gray-600"></th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Date</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Ticket Number</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Dump Location</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Weight/Yards</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Truck Id</th>
+            <tr>
+              <th className="p-2 text-left">
+                <input
+                  type="checkbox"
+                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                />
+              </th>
+              <th className="py-6 text-left text-sm font-bold text-gray-500">No.</th>
+              <th className="py-6 text-left text-sm font-bold text-gray-500">Vehicle Name</th>
               <th className="py-6 text-left text-sm font-bold text-gray-500">Status</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500"></th>
+              <th className="py-6 text-left text-sm font-bold text-gray-500">Last Updated</th>
             </tr>
           </thead>
           <tbody>
             {paginatedData.map((row, index) => (
-              <tr
-                key={index}
-                className="hover:bg-gray-100 transition-colors odd:bg-gray-50 even:bg-white rounded-lg my-2 border border-gray-300"
-              >
-                <td className="p-2 text-sm">
+              <tr key={index} className="hover:bg-gray-100 transition-colors odd:bg-gray-50 even:bg-white">
+                <td className="p-2">
                   <input
                     type="checkbox"
-                    checked={row.selected}
-                    onChange={() => toggleRowSelection(index)} />
+                    checked={row.selected || false}
+                    onChange={() => toggleRowSelection(index)}
+                  />
                 </td>
-                <td className="py-5 text-lg ">{row.date}</td>
-                <td className="py-5 text-lg ">{row.client}</td>
-                <td className="py-5 text-lg ">{row.address}</td>
-                <td className="py-5 text-lg ">{row.jobId}</td>
-                <td className="py-5 text-lg ">{row.route}</td>
-                <td className="py-5 text-lg ">
-                  <span
-                    className={`inline-block px-2 py-1 rounded-full text-sm text-white ${
-                      row.status === "Completed"
-                        ? "bg-green-400"
-                        : row.status === "In Process"
-                        ? "bg-yellow-400"
-                        : "bg-blue-400"
-                    }`}
-                  >
+                <td className="py-5 text-lg">{(currentPage - 1) * rowsPerPage + index + 1}</td>
+                <td className="py-5 text-lg">{row.vehicleName}</td>
+                <td className="py-5 text-lg">
+                  <span className={`inline-block px-2 py-1 rounded-full text-sm text-white ${
+                    row.status === "Available" ? "bg-green-400" :
+                    row.status === "In Use" ? "bg-yellow-400" :
+                    "bg-blue-400"}`}>
                     {row.status}
                   </span>
                 </td>
-                <td className="text-4xl font-bold">
-                  <button
-                    className="text-gray-500 text-lg"
-                    onClick={() => alert(`Action for Job ID: ${row.jobId}`)}>
-                    :
-                  </button>
-                </td>
+                <td className="py-5 text-lg">{new Date(row.lastUpdated).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -184,32 +146,23 @@ const DumpRuns = () => {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`px-3 py-1 rounded ${
-            currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'
-          }`}
+          className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}
         >
           Previous
         </button>
-        {Array.from({ length: endPage - startPage + 1 }, (_, index) => {
-          const page = startPage + index;
-          return (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 rounded ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {page}
-            </button>
-          );
-        })}
+        {Array.from({ length: Math.ceil(filteredData.length / rowsPerPage) }, (_, index) => (
+          <button
+            key={index}
+            onClick={() => handlePageChange(index + 1)}
+            className={`px-3 py-1 rounded ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+          >
+            {index + 1}
+          </button>
+        ))}
         <button
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className={`px-3 py-1 rounded ${
-            currentPage === totalPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'
-          }`}
+          disabled={currentPage === Math.ceil(filteredData.length / rowsPerPage)}
+          className={`px-3 py-1 rounded ${currentPage === Math.ceil(filteredData.length / rowsPerPage) ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}
         >
           Next
         </button>

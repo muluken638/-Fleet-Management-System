@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 
@@ -6,19 +6,56 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const SatisfactionCard = () => {
-  // Set the percentage of satisfied users and the number of users
-  const satisfiedPercentage = 80; // This can be dynamic
-  const unsatisfiedPercentage = 100 - satisfiedPercentage;
-  const satisfiedCustomers = 800; // Example value
-  const unsatisfiedCustomers = 200; // Example value
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/products'); // Ensure this path is correct
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setVehicles(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return (
+    <div>
+      <p>Error: {error}</p>
+      <button onClick={() => window.location.reload()}>Retry</button>
+    </div>
+  );
+
+  // Count vehicles by status
+  const totalAvailable = vehicles.filter(vehicle => vehicle.status === 'active').length;
+  const totalInUse = vehicles.filter(vehicle => vehicle.status === 'inactive').length;
+  const totalUnderMaintenance = vehicles.filter(vehicle => vehicle.status === 'maintenance').length;
+  const totalVehicles = vehicles.length;
+
+  // Calculate percentages
+  const satisfiedPercentage = totalAvailable / totalVehicles * 100 || 0; // Available vehicles as satisfied
+  const unsatisfiedPercentage = totalInUse / totalVehicles * 100 || 0; // In use vehicles as unsatisfied
+  const maintenancePercentage = totalUnderMaintenance / totalVehicles * 100 || 0; // Under maintenance vehicles
+
+  // Data for the Doughnut chart
   const data = {
-    labels: ['Satisfied', 'Unsatisfied'],
+    labels: ['active', 'inactive', 'maintenance'],
     datasets: [
       {
-        data: [satisfiedPercentage, unsatisfiedPercentage],
-        backgroundColor: ['#3b82f6', '#f87171'], // Blue for satisfied, Red for unsatisfied
-        hoverBackgroundColor: ['#2563eb', '#dc2626'],
+        data: [satisfiedPercentage, unsatisfiedPercentage, maintenancePercentage],
+        backgroundColor: ['#3b82f6', '#f87171', '#fbbf24'], // Blue for satisfied, Red for unsatisfied, Yellow for under maintenance
+        hoverBackgroundColor: ['#2563eb', '#dc2626', '#d97706'],
         borderWidth: 0, // No border for cleaner look
       },
     ],
@@ -37,33 +74,34 @@ const SatisfactionCard = () => {
         const ctx = chart.ctx;
         const centerX = chart.width / 2;
         const centerY = chart.height / 2;
-        const radius = chart.innerRadius + (chart.outerRadius - chart.innerRadius) / 2;
         ctx.save();
         ctx.font = 'bold 24px Arial';
         ctx.fillStyle = '#000'; // Black color for the text
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${satisfiedPercentage}%`, centerX, centerY); // Display percentage at the center
+        ctx.fillText(`${Math.round(satisfiedPercentage)}%`, centerX, centerY); // Display percentage at the center
         ctx.restore();
       },
     },
   };
 
   return (
-    <div className="container mx-auto p-6 bg-white rounded-lg shadow-lg w-100 h-full">
+    <div className="container mx-auto p-6 bg-white rounded-lg shadow-lg w-full h-full">
       <h2 className="text-2xl font-semibold text-blue-500 flex items-center space-x-2">
-        <span>⭐</span>
-        <span>Customer Satisfaction</span>
+        <span>Total</span>
       </h2>
       <div className="w-full mx-auto mt-6">
         <Doughnut data={data} options={options} />
       </div>
-      <div className="mt-6 ">
+      <div className="mt-6">
         <p className="text-gray-700 flex justify-start items-center">
-          <span className="text-blue-500 text-4xl gap-2">•</span> Satisfied Customers: {satisfiedCustomers}
+          <span className="text-blue-500 text-4xl gap-2">•</span>Active {totalAvailable}
         </p>
         <p className="text-gray-700 flex justify-start items-center">
-          <span className="text-red-500 text-4xl gap-2">•</span> Unsatisfied Customers: {unsatisfiedCustomers}
+          <span className="text-red-500 text-4xl gap-2">•</span> InActive {totalInUse}
+        </p>
+        <p className="text-gray-700 flex justify-start items-center">
+          <span className="text-yellow-500 text-4xl gap-2">•</span>Maintenance {totalUnderMaintenance}
         </p>
       </div>
     </div>
