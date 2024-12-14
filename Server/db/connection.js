@@ -1,15 +1,18 @@
 const mongoose = require('mongoose');
+require('dotenv').config(); // Load environment variables from .env file
 
-// MongoDB connection string
-const uri = 'mongodb://localhost:27017/vehiclemanagment';
+// MongoDB connection string from environment variables
+const uri = process.env.MONGODB_URI;
 
 // Connect to MongoDB
 mongoose.connect(uri, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
+    useUnifiedTopology: true,
+})
+.then(() => {
     console.log('Connected to MongoDB successfully!');
-}).catch((error) => {
+})
+.catch((error) => {
     console.error('Error connecting to MongoDB:', error);
 });
 
