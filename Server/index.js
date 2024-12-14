@@ -13,6 +13,7 @@ app.post("/", async (req, res) => {
   res.send(result);
 });
 const Product = require("./Models/Products");
+const { default: mongoose } = require("mongoose");
 app.post("/api/products", async (req, res) => {
   let product = new Product(req.body);
   let result = await product.save();
@@ -28,6 +29,44 @@ app.get('/api/products', async (req, res) => {
       res.status(500).json({ message: 'Error fetching vehicles' });
     }
   });
+// DELETE Product
+app.delete('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const product = await Product.findByIdAndDelete(id); // Find and delete the product by ID
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' }); // Product not found
+    }
+    res.status(200).json({ message: 'Product deleted successfully' }); // Success response
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ message: 'Error deleting product' }); // Internal server e
+  }
+});
+// UPDATE Product
+app.put('/api/products/:id', async (req, res) => {
+  const { id } = req.params;  // Extracting the `id` from the URL path
+  const updatedData = req.body;  // Getting the updated data from the request body
+  
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ error: 'Invalid product ID' });
+  }
+
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(id, updatedData, { new: true });
+    
+    if (!updatedProduct) {
+      return res.status(404).send({ error: 'Product not found' });
+    }
+    
+    res.json(updatedProduct);  // Send back the updated product
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).send('Server error');
+  }
+});
+
 
 app.post('/api/vehicles', async (req, res) => {
     try {

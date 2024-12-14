@@ -3,7 +3,7 @@ import { FaFilter } from 'react-icons/fa';
 
 // Modal component for adding new vehicle data
 const AddDataModal = ({ isOpen, onClose, onAdd }) => {
-  const [name, setname] = useState('');
+  const [name, setName] = useState('');
   const [status, setStatus] = useState('active');
   const [lastUpdated, setLastUpdated] = useState(new Date().toISOString().split('T')[0]); // Format as YYYY-MM-DD
 
@@ -47,7 +47,7 @@ const AddDataModal = ({ isOpen, onClose, onAdd }) => {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setname(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 required
                 className="border px-2 py-1 w-full"
               />
@@ -88,13 +88,107 @@ const AddDataModal = ({ isOpen, onClose, onAdd }) => {
   );
 };
 
+// Modal component for updating vehicle data
+const UpdateDataModal = ({ isOpen, onClose, data, onUpdate }) => {
+  const [name, setName] = useState(data.name || '');
+  const [status, setStatus] = useState(data.status || 'active');
+  const [lastUpdated, setLastUpdated] = useState(data.lastUpdated || new Date().toISOString().split('T')[0]);
+
+  const handleUpdate = () => {
+    const updatedData = {
+      name, // from state
+      status, // from state
+      lastUpdated, // from state
+    };
+  
+    // Ensure that data contains an ID and log it for debugging
+    console.log('Selected product ID:', data.id);  // This should print the ID of the selected data
+  
+    if (!data.id) {
+      console.error('Product ID is missing');
+      return;
+    }
+  
+    fetch(`http://localhost:4000/api/products/${data.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Updated product:', data);
+        onUpdate(data);  // Update the table with the new data
+        onClose();  // Close the modal
+      })
+      .catch((error) => {
+        console.error('Error updating product:', error);
+      });
+  };
+  
+  return (
+    isOpen && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white p-4 rounded shadow-lg">
+          <h2 className="text-lg font-bold mb-4">Update Vehicle</h2>
+          <form onSubmit={handleUpdate}>
+            <div className="mb-4">
+              <label className="block text-gray-700">Vehicle Name:</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="border px-2 py-1 w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700">Status:</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="border px-2 py-1 w-full"
+              >
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+                <option value="maintenance">maintenance</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700">Last Updated:</label>
+              <input
+                type="date"
+                value={lastUpdated}
+                onChange={(e) => setLastUpdated(e.target.value)}
+                className="border px-2 py-1 w-full"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded mr-2">
+                Cancel
+              </button>
+              <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+                Update Vehicle
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  );
+};
+
+// JobTable component to display vehicle data in a table
 // JobTable component to display vehicle data in a table
 const JobTable = () => {
   const [tableData, setTableData] = useState([]);
   const [filters, setFilters] = useState({ status: '', date: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedData, setSelectedData] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -112,6 +206,24 @@ const JobTable = () => {
 
   const handleAddData = (newData) => {
     setTableData((prevData) => [...prevData, newData]);
+  };
+
+  const handleUpdateData = (updatedData) => {
+    setTableData((prevData) =>
+      prevData.map((item) => (item.id === updatedData.id ? updatedData : item))
+    );
+  };
+
+  const handleDeleteData = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/products/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Error deleting product');
+      setTableData((prevData) => prevData.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error('Error deleting data:', error);
+    }
   };
 
   // Get filtered data
@@ -139,135 +251,122 @@ const JobTable = () => {
     setCurrentPage(1);
   };
 
-  // Select All Rows
-  const toggleSelectAll = (checked) => {
-    setTableData((prevData) => prevData.map((row) => ({ ...row, selected: checked })));
-  };
-
-  // Handle Individual Row Selection
-  const toggleRowSelection = (index) => {
-    setTableData((prevData) =>
-      prevData.map((row, idx) => (idx === index ? { ...row, selected: !row.selected } : row)),
-    );
-  };
-
-  // Delete Selected Rows
-  const deleteSelectedRows = () => {
-    setTableData((prevData) => prevData.filter((row) => !row.selected));
-  };
-
-  // Format the createdAt date to a readable format (YYYY-MM-DD)
-  const formatDate = (date) => {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) {
-      return 'Invalid Date'; // Return a fallback value if the date is invalid
-    }
-    return d.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
-
-  // Check if any rows are selected
-  const isAnySelected = tableData.some(row => row.selected);
-
   return (
-    <div className="p-4 bg-white rounded-lg mx-4">
-      {/* Top Controls */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <label className="text-sm text-gray-600">Filter by Status:</label>
+    <div className="container mx-auto p-4">
+      <div className="mb-4 flex justify-between items-center">
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded">
+          Add New Vehicle
+        </button>
+
+        <div className="flex space-x-2">
           <select
-            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
             value={filters.status}
-            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}>
+            className="border px-2 py-1"
+          >
             <option value="">All Statuses</option>
-            <option value="active">active</option>
-            <option value="inactive">inactive</option>
-            <option value="maintenance">maintenance</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="maintenance">Maintenance</option>
           </select>
           <input
             type="date"
-            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
+            onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
             value={filters.date}
-            onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))} />
+            className="border px-2 py-1"
+          />
           <button
-            className="px-3 py-2 bg-gray-100 text-sm text-gray-700 rounded"
-            onClick={resetFilters}>
-            <FaFilter /> Reset Filters
-          </button>
-        </div>
-        <div className="flex items-center">
-          {isAnySelected && (
-            <button
-              className="bg-red-500 text-white px-4 py-2 rounded mr-4"
-              onClick={deleteSelectedRows}>
-              Delete Selected
-            </button>
-          )}
-          <button
-            className="bg-green-500 text-white px-4 py-2 rounded"
-            onClick={() => setIsModalOpen(true)}>
-            Add New Data
+            onClick={resetFilters}
+            className="bg-gray-200 px-4 py-2 rounded">
+            Reset
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-separate border-spacing-0">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">
+      <table className="min-w-full table-auto border-collapse border border-gray-200">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="py-2 px-4">Select</th>
+            <th className="py-2 px-4">#</th>
+            <th className="py-2 px-4">Name</th>
+            <th className="py-2 px-4">Status</th>
+            <th className="py-2 px-4">Created At</th>
+            <th className="py-2 px-4">Last Updated</th>
+            <th className="py-2 px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedData.map((row, index) => (
+            <tr key={row.id} className="border-b hover:bg-gray-100">
+              <td className="p-2">
                 <input
                   type="checkbox"
-                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                  checked={row.selected || false}
+                  // Add Row Selection Handling if needed
                 />
-              </th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">No.</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Vehicle Name</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Status</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Created At</th>
-              <th className="py-6 text-left text-sm font-bold text-gray-500">Last Updated</th>
+              </td>
+              <td className="py-4 text-sm">{index + 1}</td>
+              <td className="py-4 text-sm">{row.name}</td>
+              <td className="py-4 text-sm">{row.status}</td>
+              <td className="py-4 text-sm">{row.createdAt}</td>
+              <td className="py-4 text-sm">{row.lastUpdated}</td>
+              <td className="py-4 text-sm">
+                <button
+                  onClick={() => {
+                    setSelectedData(row);
+                    setIsUpdateModalOpen(true);
+                  }}
+                  className="text-blue-500 hover:text-blue-700">
+                  Update
+                </button>
+                <button
+                  onClick={() => handleDeleteData(row.id)}
+                  className="text-red-500 hover:text-red-700 ml-2">
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {paginatedData.map((row, index) => (
-              <tr key={row._id}>
-                <td className="py-6 px-4 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={row.selected || false}
-                    onChange={() => toggleRowSelection(index)}
-                  />
-                </td>
-                <td className="py-6 px-4 text-sm">{index + 1}</td>
-                <td className="py-6 px-4 text-sm">{row.name}</td>
-                <td className="py-6 px-4 text-sm">{row.status}</td>
-                <td className="py-6 px-4 text-sm">{formatDate(row.createdAt)}</td>
-                <td className="py-6 px-4 text-sm">{formatDate(row.updatedAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
+      {/* Pagination Controls */}
+      <div className="mt-4 flex justify-between items-center">
         <button
+          className="px-3 py-2 bg-gray-200 text-sm text-gray-700 rounded"
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="px-3 py-2 bg-gray-200 rounded-md">
+          disabled={currentPage === 1}>
           Prev
         </button>
-        <span className="text-sm">{`Page ${currentPage} of ${Math.ceil(filteredData.length / rowsPerPage)}`}</span>
+        <span className="text-sm">
+          Page {currentPage} of {Math.ceil(filteredData.length / rowsPerPage)}
+        </span>
         <button
+          className="px-3 py-2 bg-gray-200 text-sm text-gray-700 rounded"
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === Math.ceil(filteredData.length / rowsPerPage)}
-          className="px-3 py-2 bg-gray-200 rounded-md">
+          disabled={currentPage === Math.ceil(filteredData.length / rowsPerPage)}>
           Next
         </button>
       </div>
 
       {/* Add Data Modal */}
-      <AddDataModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddData} />
+      <AddDataModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddData}
+      />
+
+      {/* Update Data Modal - Only render if selectedData is not null */}
+      {selectedData && (
+        <UpdateDataModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => setIsUpdateModalOpen(false)}
+          data={selectedData}
+          onUpdate={handleUpdateData}
+        />
+      )}
     </div>
   );
 };
