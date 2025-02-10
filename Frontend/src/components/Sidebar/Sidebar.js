@@ -1,99 +1,171 @@
-import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faTachometerAlt,
-  faBriefcase,
-  faTruck,
-  faMap,
-  faClipboardList,
-  faRecycle,
-  faCog,
-  faSignOutAlt,
-} from '@fortawesome/free-solid-svg-icons';
-import { NavLink } from 'react-router-dom';
-import { FaSyncAlt } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Sidebar = ({ setActiveItem }) => {
-  const mainLinks = [
-    { name: 'Dashboard', icon: faTachometerAlt, path: '/' },
-    { name: 'Vehicles', icon: faBriefcase, path: '/job' },
-    // { name: 'Dump Runs', icon: faRecycle, path: '/dump-runs' },
-    // { name: 'Trucks', icon: faTruck, path: '/trucks' },
-    // { name: 'Daily Report by Routes', icon: faMap, path: '/routes-report' },
-    // { name: 'Reconsilations', icon: faClipboardList, path: '/reconciliations' },
-  ];
+const Sidebar = () => {
+  const [openSubmenu, setOpenSubmenu] = useState(null);
+  const navigate = useNavigate();
 
-  const footerLinks = [
-    { name: 'Admin', icon: 'avatar', path: '/admin', isAdmin: true },
-    { name: 'Settings', icon: faCog, path: '/settings' },
-    { name: 'Logout', icon: faSignOutAlt, path: '/logout' },
-  ];
+  // Function to toggle submenus
+  const toggleSubmenu = (menu) => {
+    if (openSubmenu === menu) {
+      setOpenSubmenu(null); // Close the submenu if it's already open
+    } else {
+      setOpenSubmenu(menu); // Open the submenu
+    }
+  };
+
+  // Function to handle logout
+  const handleLogout = () => {
+    // Perform logout actions (e.g., clear session, remove tokens, etc.)
+    localStorage.removeItem('authToken'); // Example: Remove auth token
+    navigate('/login'); // Redirect to login page
+  };
 
   return (
-    <div className="h-screen background-color w-full flex flex-col border-r bordercolor">
-      {/* Site Name */}
-      <div className="h-20vh py-5 bg-white text-black flex items-center justify-center text-4xl font-bold">
-        Staff <FaSyncAlt color="primarycolor " className="px-2" size={14} />
-        Synch
-      </div>
-      <div className='border bordercolor mx-4'></div>
+    <aside className="w-64 bg-blue-600 text-white p-4 flex flex-col h-screen">
+      <div className="flex-1">
+        <h2 className="text-xl font-bold mb-6">Fleet Management</h2>
+        <nav>
+          <ul className="space-y-2">
+            {/* Dashboard */}
+            <li>
+              <Link to="/" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                📊 Dashboard
+              </Link>
+            </li>
 
-      {/* Main Links */}
-      <div className="flex-1 h-70vh overflow-y-auto">
-        <ul className="space-y-2 px-4 py-6">
-          {mainLinks.map((link, index) => (
-            <li key={index}>
-              <NavLink
-                to={link.path}
-                onClick={() => setActiveItem(link.name)} // Set the active item
-                className={({ isActive }) =>
-                  `flex items-center gap-4 py-2 px-4 rounded-lg cursor-pointer sidebar-text ${
-                    isActive ? 'bg-primarycolor text-white' : 'hover:bg-blue-800 hover:text-white'
-                  }`
-                }
+            {/* Vehicle Management */}
+            <li>
+              <div
+                className="flex items-center justify-between p-2 hover:bg-blue-700 rounded cursor-pointer"
+                onClick={() => toggleSubmenu('vehicles')}
               >
-                <FontAwesomeIcon icon={link.icon} className="text-xl textcolor" />
-                <span>{link.name}</span>
-              </NavLink>
+                <span>🚗 Vehicle Management</span>
+                <span>{openSubmenu === 'vehicles' ? '▲' : '▼'}</span>
+              </div>
+              {openSubmenu === 'vehicles' && (
+                <ul className="ml-4 mt-2 space-y-2">
+                  <li>
+                    <Link to="/vehicles/list" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Vehicle List
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/vehicles/add" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Add New Vehicle
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/vehicles/categories" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Vehicle Categories
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/vehicles/tracking" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Vehicle Tracking
+                    </Link>
+                  </li>
+                </ul>
+              )}
             </li>
-          ))}
-        </ul>
-      </div>
-      <div className="border bordercolor mx-4"></div>
-      {/* Footer Links */}
-      <div className="px-4 py-6">
-        <ul className="space-y-2">
-          {footerLinks.map((link, index) => (
-            <li key={index}>
-              <NavLink
-                to={link.path}
-                onClick={() => setActiveItem(link.name)} // Set the active item
-                className={({ isActive }) =>
-                  `flex items-center gap-4 py-2 px-4 rounded-lg cursor-pointer sidebar-text ${
-                    link.name === 'Admin'
-                      ? 'bg-white text-white shadow-lg' // Special styles for Admin
-                      : isActive
-                      ? 'bg-blue-500 text-white'
-                      : 'hover:bg-blue-500 hover:text-white'
-                  }`
-                }
+
+            {/* Driver Management */}
+            <li>
+              <div
+                className="flex items-center justify-between p-2 hover:bg-blue-700 rounded cursor-pointer"
+                onClick={() => toggleSubmenu('drivers')}
               >
-                {link.icon === 'avatar' ? (
-                  <img
-                    src="https://randomuser.me/api/portraits/men/30.jpg" // Replace with actual avatar image URL
-                    alt="Admin Avatar"
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <FontAwesomeIcon icon={link.icon} className="text-xl" />
-                )}
-                <span>{link.name}</span>
-              </NavLink>
+                <span>👤 Driver Management</span>
+                <span>{openSubmenu === 'drivers' ? '▲' : '▼'}</span>
+              </div>
+              {openSubmenu === 'drivers' && (
+                <ul className="ml-4 mt-2 space-y-2">
+                  <li>
+                    <Link to="/drivers/list" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Driver List
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/drivers/add" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Add New Driver
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/drivers/assignments" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Driver Assignments
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/drivers/performance" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Driver Performance
+                    </Link>
+                  </li>
+                </ul>
+              )}
             </li>
-          ))}
-        </ul>
+
+            {/* Trip Management */}
+            <li>
+              <div
+                className="flex items-center justify-between p-2 hover:bg-blue-700 rounded cursor-pointer"
+                onClick={() => toggleSubmenu('trips')}
+              >
+                <span>🗺️ Trip Management</span>
+                <span>{openSubmenu === 'trips' ? '▲' : '▼'}</span>
+              </div>
+              {openSubmenu === 'trips' && (
+                <ul className="ml-4 mt-2 space-y-2">
+                  <li>
+                    <Link to="/trips/list" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Trip List
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/trips/create" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Create New Trip
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/trips/history" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Trip History
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/trips/analytics" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                      Trip Analytics
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            {/* Reports & Analytics */}
+            <li>
+              <Link to="/reports" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                📈 Reports & Analytics
+              </Link>
+            </li>
+
+            {/* Settings */}
+            <li>
+              <Link to="/settings" className="flex items-center p-2 hover:bg-blue-700 rounded">
+                ⚙️ Settings
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
-    </div>
+
+      {/* Logout Button */}
+      <div className="mt-auto">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200"
+        >
+          Logout
+        </button>
+      </div>
+    </aside>
   );
 };
 
