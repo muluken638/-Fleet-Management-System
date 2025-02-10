@@ -22,7 +22,8 @@ const VehicleDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/products'); // Adjust the path as necessary
+        const apiUrl = process.env.REACT_APP_API_URL; // Use the environment variable
+        const response = await fetch(`${apiUrl}/vehicles`); // Adjust the path if necessary
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -47,14 +48,13 @@ const VehicleDashboard = () => {
   );
 
   // Count products by status
-  const totalAvailable = products.filter(product => product.status === 'active').length;
-  const totalInUse = products.filter(product => product.status === 'inactive').length;
-  const totalUnderMaintenance = products.filter(product => product.status === 'maintenance').length;
+  const totalAvailable = products.filter(product => product.status === 'available').length;
+  const totalInUse = products.filter(product => product.status === 'out_of_stock').length;
+  const totalUnderMaintenance = products.filter(product => product.status === 'discontinued').length;
 
   return (
-  <div className="flex-row">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-    
+    <div className="flex-row">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
         <Card 
           title="Active Vehicles" 
           icon={faCar} 

@@ -13,7 +13,8 @@ const SatisfactionCard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/products'); // Ensure this path is correct
+        const apiUrl = process.env.REACT_APP_API_URL; // Use the environment variable
+        const response = await fetch(`${apiUrl}/vehicles`); // Ensure this path is correct
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -38,9 +39,10 @@ const SatisfactionCard = () => {
   );
 
   // Count vehicles by status
-  const totalAvailable = vehicles.filter(vehicle => vehicle.status === 'active').length;
-  const totalInUse = vehicles.filter(vehicle => vehicle.status === 'inactive').length;
-  const totalUnderMaintenance = vehicles.filter(vehicle => vehicle.status === 'maintenance').length;
+  const totalAvailable = vehicles.filter(product => product.status === 'available').length;
+  const totalInUse = vehicles.filter(product => product.status === 'out_of_stock').length;
+  const totalUnderMaintenance = vehicles.filter(product => product.status === 'discontinued').length;
+
   const totalVehicles = vehicles.length;
 
   // Calculate percentages
@@ -50,7 +52,7 @@ const SatisfactionCard = () => {
 
   // Data for the Doughnut chart
   const data = {
-    labels: ['active', 'inactive', 'maintenance'],
+    labels: ['available', 'out_of_stock', 'discontinued'],
     datasets: [
       {
         data: [satisfiedPercentage, unsatisfiedPercentage, maintenancePercentage],
@@ -95,13 +97,13 @@ const SatisfactionCard = () => {
       </div>
       <div className="mt-6">
         <p className="text-gray-700 flex justify-start items-center">
-          <span className="text-blue-500 text-4xl gap-2">•</span>Active {totalAvailable}
+          <span className="text-blue-500 text-4xl gap-2">•</span>Available {totalAvailable}
         </p>
         <p className="text-gray-700 flex justify-start items-center">
-          <span className="text-red-500 text-4xl gap-2">•</span> InActive {totalInUse}
+          <span className="text-red-500 text-4xl gap-2">•</span> out_of_stock {totalInUse}
         </p>
         <p className="text-gray-700 flex justify-start items-center">
-          <span className="text-yellow-500 text-4xl gap-2">•</span>Maintenance {totalUnderMaintenance}
+          <span className="text-yellow-500 text-4xl gap-2">•</span>discontinued {totalUnderMaintenance}
         </p>
       </div>
     </div>

@@ -14,7 +14,9 @@ const ChartData = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/products'); // Ensure this path is correct
+        // Using the environment variable for the API URL
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+        const response = await fetch(`${apiUrl}/vehicles`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -39,13 +41,14 @@ const ChartData = () => {
   );
 
   // Count products by status
-  const totalAvailable = products.filter(product => product.status === 'active').length;
-  const totalInUse = products.filter(product => product.status === 'inactive').length;
-  const totalUnderMaintenance = products.filter(product => product.status === 'maintenance').length;
+  const totalAvailable = products.filter(product => product.status === 'available').length;
+  const totalInUse = products.filter(product => product.status === 'out_of_stock').length;
+  const totalUnderMaintenance = products.filter(product => product.status === 'discontinued').length;
+
 
   // Chart data configuration
   const data = {
-    labels: ['active', 'inactive', 'maintenance'],
+    labels: ['available', 'out_of_stock', 'discontinued'],
     datasets: [
       {
         label: 'Vehicle Count',
@@ -97,8 +100,10 @@ const ChartData = () => {
 
   return (
     <div className="container mx-auto p-6 bg-white rounded-lg shadow-lg w-full">
-      <div className="flex items-center justify-between ">
-        <h2 className="text-2xl font-semibold flex items-center justify-center"><FaCarAlt /> Vehicle Status Overview</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-semibold flex items-center">
+          <FaCarAlt className="mr-2" /> Vehicle Status Overview
+        </h2>
         <select
           value={selectedOption}
           onChange={(e) => setSelectedOption(e.target.value)}
